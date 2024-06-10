@@ -1,4 +1,5 @@
 import socket, struct, textwrap
+import pyuac
 
 def unpack_ethernet_frame(data):
 	"""
@@ -12,16 +13,15 @@ def unpack_ethernet_frame(data):
 	The s, H here are format characters.
 	We passed Raw_Data only till the 14th byte with data[:14]. From data[14:] is our actual payload. 
 	"""
-	dest_mac_addr, src_mac_addr, ethernet_protocol = struct.unpack('! 6s 6s H', data[:14])
-	return dest_mac_addr, src_mac_addr, ethernet_protocol
+	dest_mac_addr_bytes, src_mac_addr_bytes, host_order = struct.unpack('! 6s 6s H', data[:14])
+	return dest_mac_addr_bytes, src_mac_addr_bytes, host_order
 
 def get_sent_data_from_ethernet_frame(data):
-    return data[14:]
+	return data[14:]
 
-def convert_host_int_to_network_byte_order(num):
-    return socket.htons(num)
+def convert_host_order_to_network_order(num):
+	return socket.htons(num)
 
 def get_mac_address(mac_addr_bytes):
-    mac_addr = map('{:02x}'.format, mac_addr_bytes)
-    return (':'.join(mac_addr)).upper()
-
+	mac_addr = map('{:02x}'.format, mac_addr_bytes)
+	return (':'.join(mac_addr)).upper()
