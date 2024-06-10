@@ -72,3 +72,9 @@ def display_packet(dest_mac, src_mac, ethernet_protocol):
 	print('\nEthernet frame')
 	print('Destination: {}, Source: {}, Protocol: {}'.format(dest_mac, src_mac, ethernet_protocol))
 
+if __name__ == '__main__':
+	if not pyuac.isUserAdmin():
+		print("Re-launching as admin!")
+		pyuac.runAsAdmin()
+	else:        
+		run()  # Already an admin here.
