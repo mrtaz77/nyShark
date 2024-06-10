@@ -18,6 +18,22 @@ def unpack_ethernet_frame(data):
 	dest_mac_addr_bytes, src_mac_addr_bytes, host_order = struct.unpack('! 6s 6s H', data[:14])
 	return dest_mac_addr_bytes, src_mac_addr_bytes, host_order
 
+def unpack_ipv4_packet(data):
+	'''
+	In an IPv4 packet, the Internet Header Length (IHL) field specifies the length of the header. This field is a 4-bit value that represents the number of 32-bit words (4-byte blocks) in the header. Since each 32-bit word is 4 bytes, to get the header length in bytes, you multiply the IHL value by 4.
+	'''
+	version, header_length_in_bytes = data[0] >> 4, (data[0] & 0xf) << 2
+	'''
+	The struct.unpack format string ! 8x B B 2x 4s 4s is used to skip the first 8 bytes (for fields we don't need in this example) and then extract:
+	ttl: 1 byte
+	protocol: 1 byte
+	Skip 2 bytes
+	src: 4 bytes (source IP address)
+	dst: 4 bytes (destination IP address)
+	'''
+	ttl, protocol, ipv4_src_bytes, ipv4_dest_bytes = struct.unpack('! 8x B B 2x 4s 4s', data[:20])
+	return version, header_length_in_bytes, ttl, protocol, ipv4_src_bytes, ipv4_dest_bytes
+
 def get_ipv4_packet_from_ethernet_frame(data):
 	return data[14:]
 
