@@ -15,6 +15,9 @@ def unpack_ethernet_frame(data):
 	dest_mac_addr, src_mac_addr, ethernet_protocol = struct.unpack('! 6s 6s H', data[:14])
 	return dest_mac_addr, src_mac_addr, ethernet_protocol
 
+def get_sent_data_from_ethernet_frame(data):
+    return data[14:]
+
 def convert_host_int_to_network_byte_order(num):
     return socket.htons(num)
 
