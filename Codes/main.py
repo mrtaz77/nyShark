@@ -58,3 +58,17 @@ def init_connection():
 	'''
 	return conn
 
+def run():
+	conn = init_connection()
+	while True:
+		raw_data, address = conn.recvfrom(65536)
+		dest_mac_addr_bytes, src_mac_addr_bytes, host_order = unpack_ethernet_frame(raw_data)
+		dest_mac_addr = get_mac_address(dest_mac_addr_bytes)
+		src_mac_addr = get_mac_address(src_mac_addr_bytes)
+		ethernet_protocol = convert_host_order_to_network_order(host_order)
+		display_packet(dest_mac_addr, src_mac_addr, ethernet_protocol)
+
+def display_packet(dest_mac, src_mac, ethernet_protocol):
+	print('\nEthernet frame')
+	print('Destination: {}, Source: {}, Protocol: {}'.format(dest_mac, src_mac, ethernet_protocol))
+
