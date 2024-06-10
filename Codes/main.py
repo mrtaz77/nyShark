@@ -1,6 +1,8 @@
 import socket, struct, textwrap
 import pyuac
 
+RECEIVER_PORT = 65535
+
 def unpack_ethernet_frame(data):
 	"""
 	! — is used to specify it is Network Data. 
@@ -16,8 +18,11 @@ def unpack_ethernet_frame(data):
 	dest_mac_addr_bytes, src_mac_addr_bytes, host_order = struct.unpack('! 6s 6s H', data[:14])
 	return dest_mac_addr_bytes, src_mac_addr_bytes, host_order
 
-def get_sent_data_from_ethernet_frame(data):
+def get_ipv4_packet_from_ethernet_frame(data):
 	return data[14:]
+
+def get_data_from_ipv4_packet(data, header_length):
+	return data[header_length:]
 
 def convert_host_order_to_network_order(num):
 	return socket.htons(num)
@@ -25,6 +30,9 @@ def convert_host_order_to_network_order(num):
 def get_mac_address(mac_addr_bytes):
 	mac_addr = map('{:02x}'.format, mac_addr_bytes)
 	return (':'.join(mac_addr)).upper()
+
+def get_ipv4_address(ipv4_addr_bytes):
+    return '.'.join(str, ipv4_addr_bytes)
 
 def init_connection():
 	'''
@@ -61,12 +69,13 @@ def init_connection():
 def run():
 	conn = init_connection()
 	while True:
-		raw_data, address = conn.recvfrom(65536)
+		raw_data, address = conn.recvfrom(RECEIVER_PORT)
 		dest_mac_addr_bytes, src_mac_addr_bytes, host_order = unpack_ethernet_frame(raw_data)
 		dest_mac_addr = get_mac_address(dest_mac_addr_bytes)
 		src_mac_addr = get_mac_address(src_mac_addr_bytes)
 		ethernet_protocol = convert_host_order_to_network_order(host_order)
 		display_packet(dest_mac_addr, src_mac_addr, ethernet_protocol)
+		ipv4_packet = get_ipv4_packet_from_ethernet_frame(raw_data)
 
 def display_packet(dest_mac, src_mac, ethernet_protocol):
 	print('\nEthernet frame')
