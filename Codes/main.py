@@ -35,32 +35,39 @@ def unpack_ipv4_packet(data):
 	return version, header_length_in_bytes, ttl, protocol, ipv4_src_bytes, ipv4_dest_bytes
 
 def unpack_icmp_packet(data):
-    icmp_type, code, checksum = struct.unpack('! B B H', data[:4])
-    return icmp_type, code, checksum
+	icmp_type, code, checksum = struct.unpack('! B B H', data[:4])
+	return icmp_type, code, checksum
 
 def unpack_tcp_packet(data):
-    src_port, dst_port, seq, ack, offset_reserved_flags = struct.unpack('! H H L L H', data[:14])
-    offset = (offset_reserved_flags >> 12) << 2
-    flags = offset_reserved_flags & 0x3f
-    urg_flag = flags >> 5
-    ack_flag = (flags & 0b010000) >> 4
-    rst_flag = (flags & 0b001000) >> 3
-    psh_flag = (flags & 0b000100) >> 2
-    syn_flag = (flags & 0b000010) >> 1
-    fin_flag = (flags & 0b000001)
-    return src_port, dst_port, seq, ack, offset, urg_flag, ack_flag, rst_flag, psh_flag, syn_flag, fin_flag
+	src_port, dst_port, seq, ack, offset_reserved_flags = struct.unpack('! H H L L H', data[:14])
+	offset = (offset_reserved_flags >> 12) << 2
+	flags = offset_reserved_flags & 0x3f
+	urg_flag = flags >> 5
+	ack_flag = (flags & 0b010000) >> 4
+	rst_flag = (flags & 0b001000) >> 3
+	psh_flag = (flags & 0b000100) >> 2
+	syn_flag = (flags & 0b000010) >> 1
+	fin_flag = (flags & 0b000001)
+	return src_port, dst_port, seq, ack, offset, urg_flag, ack_flag, rst_flag, psh_flag, syn_flag, fin_flag
+
+def unpack_udp_packet(data):
+	src_prt, dst_prt, length = struct.unpack('! H H H', data[:6])
+	return src_prt, dst_prt, length
 
 def get_data_from_icmp_packet(data):
-    return data[4:]
+	return data[4:]
 
 def get_data_from_tcp_packet(data, offset):
-    return data[offset:]
+	return data[offset:]
 
 def get_ipv4_packet_from_ethernet_frame(data):
 	return data[14:]
 
 def get_data_from_ipv4_packet(data, header_length):
 	return data[header_length:]
+
+def get_data_from_udp_packet(data):
+	return data[8:]
 
 def convert_host_order_to_network_order(num):
 	return socket.htons(num)
@@ -70,7 +77,7 @@ def get_mac_address(mac_addr_bytes):
 	return (':'.join(mac_addr)).upper()
 
 def get_ipv4_address(ipv4_addr_bytes):
-    return '.'.join(str, ipv4_addr_bytes)
+	return '.'.join(str, ipv4_addr_bytes)
 
 def init_connection():
 	'''
@@ -105,23 +112,27 @@ def init_connection():
 	return conn
 
 def packet_display_adapter(dest_mac_addr_bytes, src_mac_addr_bytes, host_order):
-    return get_mac_address(dest_mac_addr_bytes), get_mac_address(src_mac_addr_bytes), convert_host_order_to_network_order(host_order)
+	return get_mac_address(dest_mac_addr_bytes), get_mac_address(src_mac_addr_bytes), convert_host_order_to_network_order(host_order)
 
 def run():
 	conn = init_connection()
 	while True:
 		raw_data, address = conn.recvfrom(RECEIVER_PORT)
 		dest_mac_addr_bytes, src_mac_addr_bytes, host_order = unpack_ethernet_frame(raw_data)
-		display_packet(packet_display_adapter(dest_mac_addr_bytes, src_mac_addr_bytes, host_order))
+		dest_mac, src_mac, eth_proto = packet_display_adapter(dest_mac_addr_bytes, src_mac_addr_bytes, host_order)
+		display_packet(dest_mac, src_mac, eth_proto)
 		ipv4_packet = get_ipv4_packet_from_ethernet_frame(raw_data)
 
 def display_packet(dest_mac, src_mac, ethernet_protocol):
 	print('\nEthernet frame')
 	print('Destination: {}, Source: {}, Protocol: {}'.format(dest_mac, src_mac, ethernet_protocol))
 
-if __name__ == '__main__':
+def pyuac_run_as_admin():
 	if not pyuac.isUserAdmin():
-		print("Re-launching as admin!")
+		print("Re-launching as admin using pyuac!")
 		pyuac.runAsAdmin()
-	else:        
+	else: 
 		run()  # Already an admin here.
+
+if __name__ == '__main__':
+	pyuac_run_as_admin()
