@@ -1,7 +1,9 @@
 import socket, struct, textwrap
 import pyuac
+from formatting import *
 
 RECEIVER_PORT = 65535
+COUNTER = 0
 
 def unpack_ethernet_frame(data):
 	"""
@@ -124,8 +126,18 @@ def run():
 		ipv4_packet = get_ipv4_packet_from_ethernet_frame(raw_data)
 
 def display_packet(dest_mac, src_mac, ethernet_protocol):
-	print('\nEthernet frame')
-	print('Destination: {}, Source: {}, Protocol: {}'.format(dest_mac, src_mac, ethernet_protocol))
+	global COUNTER
+	COUNTER += 1
+	print('\nEthernet frame {}'.format(COUNTER))
+	print(INDENT1+'Destination: {}, Source: {}, Protocol: {}'.format(dest_mac, src_mac, ethernet_protocol))
+
+def display_multiline_data(prefix, string, size=80):
+    size -= len(prefix)
+    if isinstance(string, bytes):
+        string = ''.join(r'\x{:02x}'.format(byte) for byte in string)
+        if not size & 1:
+            size -= 1
+    return '\n'.join([prefix + line for line in textwrap.wrap(string, size)])
 
 def pyuac_run_as_admin():
 	if not pyuac.isUserAdmin():
