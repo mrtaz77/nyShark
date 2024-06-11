@@ -22,7 +22,7 @@ def unpack_ipv4_packet(data):
 	'''
 	In an IPv4 packet, the Internet Header Length (IHL) field specifies the length of the header. This field is a 4-bit value that represents the number of 32-bit words (4-byte blocks) in the header. Since each 32-bit word is 4 bytes, to get the header length in bytes, you multiply the IHL value by 4.
 	'''
-	version, header_length_in_bytes = data[0] >> 4, (data[0] & 0xf) << 2
+	version, header_length_in_bytes = data[0] >> 4, (data[0] & 0xf) * 4
 	'''
 	The struct.unpack format string ! 8x B B 2x 4s 4s is used to skip the first 8 bytes (for fields we don't need in this example) and then extract:
 	ttl: 1 byte
@@ -33,6 +33,24 @@ def unpack_ipv4_packet(data):
 	'''
 	ttl, protocol, ipv4_src_bytes, ipv4_dest_bytes = struct.unpack('! 8x B B 2x 4s 4s', data[:20])
 	return version, header_length_in_bytes, ttl, protocol, ipv4_src_bytes, ipv4_dest_bytes
+
+def unpack_icmp_packet(data):
+    icmp_type, code, checksum = struct.unpack('! B B H', data[:4])
+    return icmp_type, code, checksum
+
+def unpack_tcp_packet(data):
+    src_port, dst_port, seq, ack, offset_reserved_flags = struct.unpack('! H H L L H', data[:14])
+    offset = (offset_reserved_flags >> 12) << 2
+    flags = offset_reserved_flags & 0x3f
+    urg_flag = flags >> 5
+    ack_flag = (flags & 0b010000) >> 4
+    rst_flag = (flags & 0b001000) >> 3
+    psh_flag = (flags & 0b000100) >> 2
+    syn_flag = (flags & 0b000010) >> 1
+    fin_flag = (flags & 0b000001)
+
+def get_data_from_icmp_packet(data):
+    return data[4:]
 
 def get_ipv4_packet_from_ethernet_frame(data):
 	return data[14:]
@@ -82,15 +100,15 @@ def init_connection():
 	'''
 	return conn
 
+def packet_display_adapter(dest_mac_addr_bytes, src_mac_addr_bytes, host_order):
+    return get_mac_address(dest_mac_addr_bytes), get_mac_address(src_mac_addr_bytes), convert_host_order_to_network_order(host_order)
+
 def run():
 	conn = init_connection()
 	while True:
 		raw_data, address = conn.recvfrom(RECEIVER_PORT)
 		dest_mac_addr_bytes, src_mac_addr_bytes, host_order = unpack_ethernet_frame(raw_data)
-		dest_mac_addr = get_mac_address(dest_mac_addr_bytes)
-		src_mac_addr = get_mac_address(src_mac_addr_bytes)
-		ethernet_protocol = convert_host_order_to_network_order(host_order)
-		display_packet(dest_mac_addr, src_mac_addr, ethernet_protocol)
+		display_packet(packet_display_adapter(dest_mac_addr_bytes, src_mac_addr_bytes, host_order))
 		ipv4_packet = get_ipv4_packet_from_ethernet_frame(raw_data)
 
 def display_packet(dest_mac, src_mac, ethernet_protocol):
