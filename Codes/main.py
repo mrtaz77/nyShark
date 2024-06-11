@@ -48,9 +48,13 @@ def unpack_tcp_packet(data):
     psh_flag = (flags & 0b000100) >> 2
     syn_flag = (flags & 0b000010) >> 1
     fin_flag = (flags & 0b000001)
+    return src_port, dst_port, seq, ack, offset, urg_flag, ack_flag, rst_flag, psh_flag, syn_flag, fin_flag
 
 def get_data_from_icmp_packet(data):
     return data[4:]
+
+def get_data_from_tcp_packet(data, offset):
+    return data[offset:]
 
 def get_ipv4_packet_from_ethernet_frame(data):
 	return data[14:]
