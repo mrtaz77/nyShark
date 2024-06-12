@@ -1,14 +1,14 @@
 # Formatting constants
-TAB = '\t'
-SPACE_HYPHEN = ' - '
+COLLAPSED = ' [-] '
+EXPANDED = ' [+] '
 SPACE = ' '
 DOT = '.'
 
-def indent(n):
-    return n * TAB + SPACE_HYPHEN
+def indent(n, suffix=COLLAPSED):
+    return n * 4 * SPACE + suffix
 
 def data_indent(n):
-	return n * TAB + SPACE
+	return n * 4 * SPACE + SPACE
 
 def dots(n):
     return n * DOT

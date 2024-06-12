@@ -12,6 +12,7 @@ def nyShark_artwork():
 
 init()
 RED = Fore.LIGHTRED_EX
-GREEN = Fore.GREEN
-BLUE = Fore.BLUE
-YELLOW = Fore.YELLOW
+GREEN = Fore.LIGHTGREEN_EX
+CYAN = Fore.LIGHTCYAN_EX
+YELLOW = Fore.LIGHTYELLOW_EX
+WHITE = Fore.WHITE
