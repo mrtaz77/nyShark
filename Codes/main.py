@@ -189,7 +189,7 @@ def show_tcp_segment(src_port, dst_port, seq, ack, offset, tcp_flags, tcp_data):
 
 def show_udp_segment(src_port, dst_port, length, checksum, udp_data):
 	print(indent(2) + 'Udp Segment:')
-	print(indent(3) + 'Src Port: {}, Dst Port: {}, Length: {}'.format(src_port, dst_port, length))
+	print(indent(3) + 'Src Port: {}, Dst Port: {}'.format(src_port, dst_port))
 	print(indent(3) + 'Length: {}, Checksum: {}'.format(length, checksum))
 	show_data(udp_data)
 
