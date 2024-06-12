@@ -1,8 +1,9 @@
 import socket, struct, textwrap
 from formatting import *
+from artwork import *
 
-RECEIVER_PORT = 65565
-COUNTER = 0
+BUFFER_SIZE = 65536
+counter = 0
 ETHERNET_FRAME_DATA_OFFSET = 14
 
 def unpack_ethernet_frame(data):
@@ -128,67 +129,72 @@ def init_connection():
 def ethernet_frame_adapter(dst_mac_addr_bytes, src_mac_addr_bytes, host_order):
 	return get_mac_address(dst_mac_addr_bytes), get_mac_address(src_mac_addr_bytes), convert_type_from_host_order_to_network_order(host_order)
 
-def run():
-	nyShark_artwork()
-	conn = init_connection()
-	while True:
-		raw_data, address = conn.recvfrom(RECEIVER_PORT)
-		dst_mac_addr_bytes, src_mac_addr_bytes, protocol_type = unpack_ethernet_frame(raw_data)
-		dst_mac, src_mac, protocol_type = ethernet_frame_adapter(dst_mac_addr_bytes, src_mac_addr_bytes, protocol_type)
-		show_ethernet_frame(dst_mac, src_mac, protocol_type)
-		ethernet_data = get_data_from_ethernet_frame(raw_data)
+def sniff_packets(conn):
+	raw_data, address = conn.recvfrom(BUFFER_SIZE)
+	dst_mac_addr_bytes, src_mac_addr_bytes, protocol_type = unpack_ethernet_frame(raw_data)
+	dst_mac, src_mac, protocol_type = ethernet_frame_adapter(dst_mac_addr_bytes, src_mac_addr_bytes, protocol_type)
+	show_ethernet_frame(dst_mac, src_mac, protocol_type)
+	ethernet_data = get_data_from_ethernet_frame(raw_data)
 
-		if protocol_type == 8:
-			version, header_length_in_bytes, ttl, protocol, ipv4_src_bytes, ipv4_dst_bytes = unpack_ipv4_packet(ethernet_data)
-			ipv4_src, ipv4_dst = get_ipv4_address(ipv4_src_bytes), get_ipv4_address(ipv4_dst_bytes)
-			show_ipv4_packet(version, header_length_in_bytes, ttl, protocol, ipv4_src, ipv4_dst)
-			ipv4_data = get_data_from_ipv4_packet(ethernet_data, header_length_in_bytes)
+	if protocol_type == 8:
+		version, header_length_in_bytes, ttl, protocol, ipv4_src_bytes, ipv4_dst_bytes = unpack_ipv4_packet(ethernet_data)
+		ipv4_src, ipv4_dst = get_ipv4_address(ipv4_src_bytes), get_ipv4_address(ipv4_dst_bytes)
+		show_ipv4_packet(version, header_length_in_bytes, ttl, protocol, ipv4_src, ipv4_dst)
+		ipv4_data = get_data_from_ipv4_packet(ethernet_data, header_length_in_bytes)
 
-			if protocol == 1:
-				icmp_type, code, checksum = unpack_icmp_message(ipv4_data)
-				icmp_data = get_data_from_icmp_message(ipv4_data)
-				show_icmp_message(icmp_type, code, checksum, icmp_data)
+		if protocol == 1:
+			icmp_type, code, checksum = unpack_icmp_message(ipv4_data)
+			icmp_data = get_data_from_icmp_message(ipv4_data)
+			show_icmp_message(icmp_type, code, checksum, icmp_data)
 
-			elif protocol == 6:
-				src_port, dst_port, seq, ack, offset, tcp_flags = unpack_tcp_packet(ipv4_data)
-				tcp_data = get_data_from_tcp_segment(ipv4_data, offset)
-				show_tcp_segment(src_port, dst_port, seq, ack, offset, tcp_flags, tcp_data)
+		elif protocol == 6:
+			src_port, dst_port, seq, ack, offset, tcp_flags = unpack_tcp_packet(ipv4_data)
+			tcp_data = get_data_from_tcp_segment(ipv4_data, offset)
+			show_tcp_segment(src_port, dst_port, seq, ack, offset, tcp_flags, tcp_data)
 
-			elif protocol == 17:
-				src_port, dst_port, length, checksum = unpack_udp_segment(ipv4_data)
-				udp_data = get_data_from_udp_segment(ipv4_data)
-				show_udp_segment(src_port, dst_port, length, checksum, udp_data)
+		elif protocol == 17:
+			src_port, dst_port, length, checksum = unpack_udp_segment(ipv4_data)
+			udp_data = get_data_from_udp_segment(ipv4_data)
+			show_udp_segment(src_port, dst_port, length, checksum, udp_data)
 
-			else:
-				show_data(ipv4_data)
 		else:
-			show_data(ethernet_data)
+			show_data(ipv4_data)
+	else:
+		show_data(ethernet_data)
+
+def run():
+	conn = init_connection()
+	try:
+		while True:
+			sniff_packets(conn)
+	except KeyboardInterrupt:
+		conn.close()
 
 def show_ethernet_frame(dst_mac, src_mac, ethernet_protocol):
-	global COUNTER
-	COUNTER += 1
-	print('\nEthernet frame {}'.format(COUNTER))
+	global counter
+	counter += 1
+	print(CYAN + '\nEthernet frame {}'.format(counter))
 	print(indent(1)+'Destination: {}, Source: {}, Protocol: {}'.format(dst_mac, src_mac, ethernet_protocol))
 
 def show_ipv4_packet(version, header_length, ttl, protocol, src, dst):
-	print(indent(1) + 'IPv4 Packet:')
+	print(GREEN + indent(1,EXPANDED) + 'IPv4 Packet:')
 	print(indent(2) + 'Version: {}, Header Length: {}, TTL: {}'.format(version, header_length, ttl))
 	print(indent(2) + 'Protocol: {}, Source: {}, Destination: {}'.format(protocol, src, dst))
 
 def show_icmp_message(icmp_type, code, checksum, icmp_data):
-	print(indent(2) + 'ICMP Packet:')
+	print(YELLOW + indent(2,EXPANDED) + 'ICMP Message:')
 	print(indent(3) + 'Type: {}, Code: {}, Checksum: {}'.format(icmp_type, code, checksum))
 	show_data(icmp_data)
 
 def show_tcp_segment(src_port, dst_port, seq, ack, offset, tcp_flags, tcp_data):
-	print(indent(2) + 'Tcp Segment:')
+	print(YELLOW + indent(2,EXPANDED) + 'TCP Segment:')
 	print(indent(3) + 'Src Port: {}, Dst Port: {}'.format(src_port, dst_port))
 	print(indent(3) + 'Sequence: {}, Acknowledgement: {}, Offset: {}'.format(seq, ack, offset))
 	show_flags(tcp_flags)
 	show_data(tcp_data)
 
 def show_udp_segment(src_port, dst_port, length, checksum, udp_data):
-	print(indent(2) + 'Udp Segment:')
+	print(YELLOW + indent(2,EXPANDED) + 'UDP Segment:')
 	print(indent(3) + 'Src Port: {}, Dst Port: {}'.format(src_port, dst_port))
 	print(indent(3) + 'Length: {}, Checksum: {}'.format(length, checksum))
 	show_data(udp_data)
@@ -197,25 +203,28 @@ def format_multiline_data(prefix, string, size=80):
 	size -= len(prefix)
 	if isinstance(string, bytes):
 		string = ''.join(r'\x{:02x}'.format(byte) for byte in string)
-		if not size & 1:
+		if size % 2:
 			size -= 1
 	return '\n'.join([prefix + line for line in textwrap.wrap(string, size)])
 
 def show_flags(flags):
 	i = 1
 	n = len(flags.items())
+	print(indent(3,EXPANDED) + 'Flags:')
 	for flag_name, flag_value in flags.items():
 		flag = dots(i - 1) + str(flag_value) + dots(n - i) + " = " + flag_name + ": "
 		if flag_value:
 			flag += "Set"
 		else:
 			flag += "Not set"
-		print(data_indent(3) + flag)
+		print(data_indent(4) + flag)
 		i += 1
 
 def show_data(data):
-	print(indent(2) + 'Data:')
+	print(WHITE + indent(2) + 'Data:')
 	print(format_multiline_data(data_indent(3), data))
 
 if __name__ == '__main__':
+	init()
+	nyShark_artwork()
 	run()
