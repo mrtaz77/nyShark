@@ -1,6 +1,9 @@
 from layers.EthernetFrame import EthernetFrame
 from artwork import *
 import socket
+from scapy.utils import PcapWriter
+from scapy.all import Ether
+import os
 
 BUFFER_SIZE = 65536
 
@@ -21,10 +24,14 @@ def init_connection():
 
 def sniff():
 	conn = init_connection()
+	script_directory = os.path.dirname(os.path.abspath(__file__))
+	pcap_file_path = os.path.join(script_directory, "output.pcap")
+	pcap_writer = PcapWriter(pcap_file_path, append=True, sync=True)
 	layer = EthernetFrame()
 	try:
 		while True:
 			raw_data, address = conn.recvfrom(BUFFER_SIZE)
+			pcap_writer.write(Ether(raw_data))
 			layer.unpack(raw_data)
 			layer.show()
 	except KeyboardInterrupt:
