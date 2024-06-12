@@ -1,13 +1,15 @@
 from abc import ABC, abstractmethod
 
 class Layer(ABC):
+	def __init__(self):
+		self.next_layer = None
+
 	@abstractmethod
 	def unpack(self, data):
 		pass
 	
-	@abstractmethod
 	def setNext(self, layer):
-		pass
+		self.next_layer = layer
 	
 	@abstractmethod
 	def show(self):
