@@ -1,6 +1,6 @@
-from enum import enum
+from enum import Enum
 
-class Protocol(enum):
+class Protocol(Enum):
     IPv4 = 0x0800
     ICMP = 1
     TCP = 6
