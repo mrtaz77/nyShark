@@ -3,6 +3,7 @@ from formatting import *
 
 RECEIVER_PORT = 65535
 COUNTER = 0
+ETHERNET_FRAME_DATA_OFFSET = 14
 
 def unpack_ethernet_frame(data):
 	"""
@@ -16,8 +17,8 @@ def unpack_ethernet_frame(data):
 	The s, H here are format characters.
 	We passed Raw_Data only till the 14th byte with data[:14]. From data[14:] is our actual payload. 
 	"""
-	dest_mac_addr_bytes, src_mac_addr_bytes, host_order = struct.unpack('! 6s 6s H', data[:14])
-	return dest_mac_addr_bytes, src_mac_addr_bytes, host_order
+	dest_mac_addr_bytes, src_mac_addr_bytes, protocol_type = struct.unpack('! 6s 6s H', data[:ETHERNET_FRAME_DATA_OFFSET])
+	return dest_mac_addr_bytes, src_mac_addr_bytes, protocol_type
 
 def unpack_ipv4_packet(data):
 	'''
@@ -62,7 +63,7 @@ def get_data_from_tcp_packet(data, offset):
 	return data[offset:]
 
 def get_ipv4_packet_from_ethernet_frame(data):
-	return data[14:]
+	return data[ETHERNET_FRAME_DATA_OFFSET:]
 
 def get_data_from_ipv4_packet(data, header_length):
 	return data[header_length:]
@@ -70,8 +71,8 @@ def get_data_from_ipv4_packet(data, header_length):
 def get_data_from_udp_packet(data):
 	return data[8:]
 
-def convert_host_order_to_network_order(num):
-	return socket.htons(num)
+def convert_type_from_host_order_to_network_order(type):
+	return socket.htons(type)
 
 def get_mac_address(mac_addr_bytes):
 	mac_addr = map('{:02x}'.format, mac_addr_bytes)
@@ -96,15 +97,15 @@ def init_connection():
 	return socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.ntohs(3))
 
 def packet_display_adapter(dest_mac_addr_bytes, src_mac_addr_bytes, host_order):
-	return get_mac_address(dest_mac_addr_bytes), get_mac_address(src_mac_addr_bytes), convert_host_order_to_network_order(host_order)
+	return get_mac_address(dest_mac_addr_bytes), get_mac_address(src_mac_addr_bytes), convert_type_from_host_order_to_network_order(host_order)
 
 def run():
 	conn = init_connection()
 	while True:
 		raw_data, address = conn.recvfrom(RECEIVER_PORT)
-		dest_mac_addr_bytes, src_mac_addr_bytes, host_order = unpack_ethernet_frame(raw_data)
-		dest_mac, src_mac, eth_proto = packet_display_adapter(dest_mac_addr_bytes, src_mac_addr_bytes, host_order)
-		display_packet(dest_mac, src_mac, eth_proto)
+		dest_mac_addr_bytes, src_mac_addr_bytes, protocol_type = unpack_ethernet_frame(raw_data)
+		dest_mac, src_mac, protocol_type = packet_display_adapter(dest_mac_addr_bytes, src_mac_addr_bytes, protocol_type)
+		display_packet(dest_mac, src_mac, protocol_type)
 		ipv4_packet = get_ipv4_packet_from_ethernet_frame(raw_data)
 
 def display_packet(dest_mac, src_mac, ethernet_protocol):
