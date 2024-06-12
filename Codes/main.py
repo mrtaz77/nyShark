@@ -129,7 +129,7 @@ def display_packet(dest_mac, src_mac, ethernet_protocol):
 	global COUNTER
 	COUNTER += 1
 	print('\nEthernet frame {}'.format(COUNTER))
-	print(INDENT1+'Destination: {}, Source: {}, Protocol: {}'.format(dest_mac, src_mac, ethernet_protocol))
+	print(indent(1)+'Destination: {}, Source: {}, Protocol: {}'.format(dest_mac, src_mac, ethernet_protocol))
 
 def display_multiline_data(prefix, string, size=80):
     size -= len(prefix)
