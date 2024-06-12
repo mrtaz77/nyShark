@@ -1,4 +1,6 @@
 # nyShark
+![nyShark](https://github.com/mrtaz77/nyShark/assets/113765142/3fa7f5a0-381d-4dc9-851b-7648708d58c9)
+
 A packet sniffer / network protocol analyzer
 
 ## How to run
