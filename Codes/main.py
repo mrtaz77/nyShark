@@ -1,5 +1,4 @@
 import socket, struct, textwrap
-import pyuac
 from formatting import *
 
 RECEIVER_PORT = 65535
@@ -83,35 +82,18 @@ def get_ipv4_address(ipv4_addr_bytes):
 
 def init_connection():
 	'''
-	This line gets the IP address of the local machine.
-	socket.gethostname() retrieves the hostname of the local machine.
-	socket.gethostbyname() converts the hostname to its corresponding IP address.
-	HOST will hold the local IP address.
+	- Creating the Socket:
+		conn = socket.socket(...) initializes a new socket and assigns it to the variable conn.
+	- Address Family (AF_PACKET):
+		socket.AF_PACKET specifies that this socket will operate at the link layer, meaning it will handle raw Ethernet frames directly.
+	- Socket Type (SOCK_RAW):
+		socket.SOCK_RAW specifies that this socket will handle raw packets, providing access to the entire packet, including headers and payloads.
+	- Protocol (ntohs(3)):
+		socket.ntohs(3) specifies the protocol. 
+		By using socket.ntohs, the protocol number is converted from network byte order to host byte order.
+		The value 3 corresponds to ETH_P_ALL, meaning the socket will capture all Ethernet protocols.
 	'''
-	HOST = socket.gethostbyname(socket.gethostname())
-	'''
-	This creates a raw socket.
-	socket.AF_INET specifies the address family for IPv4.
-	socket.SOCK_RAW specifies that this is a raw socket, allowing for low-level network packet access.
-	'''
-	conn = socket.socket(socket.AF_INET, socket.SOCK_RAW)
-	'''
-	This binds the raw socket to the local IP address (HOST) and an arbitrary port number (0).
-	Binding to port 0 tells the operating system to choose an arbitrary available port.
-	'''
-	conn.bind((HOST, 0))
-	'''
-	This uses the ioctl (input/output control) method to enable promiscuous mode on the socket.
-	socket.SIO_RCVALL is a socket I/O control code specific to Windows that enables a socket to receive all packets.
-	socket.RCVALL_ON is the flag to turn on promiscuous mode.
-	In promiscuous mode, the network interface card (NIC) captures all packets on the network, regardless of their destination.
-	NOTE : Creating raw sockets and enabling promiscuous mode typically requires elevated permissions (administrator or root access).
-	'''
-	conn.ioctl(socket.SIO_RCVALL, socket.RCVALL_ON)	
-	'''
-	Summary : Get local IP-addr > create raw socket for IPv4 > Bind to local IP on any port > enable promiscuous mode
-	'''
-	return conn
+	return socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.ntohs(3))
 
 def packet_display_adapter(dest_mac_addr_bytes, src_mac_addr_bytes, host_order):
 	return get_mac_address(dest_mac_addr_bytes), get_mac_address(src_mac_addr_bytes), convert_host_order_to_network_order(host_order)
@@ -139,12 +121,5 @@ def display_multiline_data(prefix, string, size=80):
             size -= 1
     return '\n'.join([prefix + line for line in textwrap.wrap(string, size)])
 
-def pyuac_run_as_admin():
-	if not pyuac.isUserAdmin():
-		print("Re-launching as admin using pyuac!")
-		pyuac.runAsAdmin()
-	else: 
-		run()  # Already an admin here.
-
 if __name__ == '__main__':
-	pyuac_run_as_admin()
+	run()
